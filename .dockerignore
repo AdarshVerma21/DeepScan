@@ -1,0 +1,10 @@
+.venv
+__pycache__
+*.pyc
+reports
+eval/data
+eval/data_video
+.git
+.pytest_cache
+.env
+perf_tmp*

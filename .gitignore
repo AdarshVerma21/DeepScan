@@ -1,0 +1,11 @@
+.env
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+reports/*
+!reports/.gitkeep
+eval/results.csv
+eval/calibration.json
+eval/tuning.json
+*.pyc
