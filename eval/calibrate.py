@@ -4,6 +4,7 @@ import csv
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 from typing import Iterable
 
@@ -40,12 +41,14 @@ def main() -> int:
         return 1
     # Fit only on the deterministic training partition. run_eval.py reports
     # metrics on the complementary held-out partition.
-    training_rows = [
-        row
-        for row in rows
-        if int.from_bytes(hashlib.sha256(row["path"].encode("utf-8")).digest()[:8], "big") / 2**64
-        >= 0.2
-    ]
+    def in_training_partition(row: dict[str, str]) -> bool:
+        path = Path(row["path"])
+        stem = re.sub(r"_wa$", "", path.stem, flags=re.IGNORECASE)
+        key = f"{row['expected']}:{path.with_name(stem + path.suffix).parent / stem}"
+        digest = hashlib.sha256(f"42:{key}".encode("utf-8")).digest()
+        return int.from_bytes(digest[:8], "big") / 2**64 >= 0.3
+
+    training_rows = [row for row in rows if in_training_partition(row)]
     if not training_rows:
         print("No training rows remain after the deterministic 80/20 split.")
         return 1

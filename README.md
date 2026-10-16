@@ -1,6 +1,12 @@
+---
+title: DeepScan
+sdk: docker
+app_port: 7860
+---
+
 # DeepScan
 
-DeepScan is a deployable, probabilistic deepfake **image and video** screening application. It combines an ensemble of pretrained Hugging Face image classifiers, MediaPipe face analysis, classical forensics (ELA, frequency spectrum, noise residual, metadata, and face-boundary checks), and an optional Groq-written explanation. It does not train or fine-tune models.
+DeepScan is a deployable, probabilistic deepfake **image and video** screening application. It combines an ensemble of pretrained Hugging Face image classifiers, MediaPipe face analysis, classical forensics (ELA, frequency spectrum, noise residual, metadata, and face-boundary checks), and an optional Anthropic/Groq-written explanation. It does not train or fine-tune models.
 
 ## Architecture
 
@@ -29,7 +35,7 @@ copy .env.example .env
 uvicorn app.main:app --host 0.0.0.0 --port 7860 --workers 1
 ```
 
-Open http://localhost:7860. The first analysis downloads configured Hugging Face models. If a model cannot load, it is skipped and the result states the limitation. Set `GROQ_API_KEY` to enable the AI summary; optionally set `GROQ_MODEL` (default `openai/gpt-oss-120b`, selected because it is currently available to the configured Groq account). Without a key, or if Groq fails, DeepScan uses a deterministic summary and marks it as a fallback.
+Open http://localhost:7860. The first analysis downloads configured Hugging Face models. If a model cannot load, it is skipped and the result states the limitation. Set `ANTHROPIC_API_KEY` to enable Anthropic summaries; optionally set `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`). Anthropic calls have configurable per-client and daily caps. If Anthropic is not configured, DeepScan can use the legacy Groq integration, or a deterministic summary when no provider is configured or a provider fails.
 
 The requirements file uses the official CPU-only PyTorch wheel index. The explicit install command above is intentional and avoids pulling a CUDA build on Windows or in Docker. Verify the environment with:
 
@@ -51,7 +57,7 @@ The image exposes port 7860, installs only the required headless OpenCV/MediaPip
 
 ## Deployment
 
-For Hugging Face Spaces, create a Docker Space, push this folder, and configure `GROQ_API_KEY` and `GROQ_MODEL` as Space secrets. For Render or Railway, deploy the Dockerfile and use port 7860 (or map the platform port to 7860); no source changes are required. Configure `DEEPSCAN_ALLOWED_ORIGINS` with a comma-separated list of trusted browser origins when the UI and API use different domains.
+For Hugging Face Spaces, create a Docker Space, push this folder, and configure `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, and the quota variables as Space secrets/variables. `GROQ_API_KEY` and `GROQ_MODEL` remain supported as a fallback provider. For Render or Railway, deploy the Dockerfile and use port 7860 (or map the platform port to 7860); no source changes are required. Configure `DEEPSCAN_ALLOWED_ORIGINS` with a comma-separated list of trusted browser origins when the UI and API use different domains.
 
 ## API
 
@@ -95,6 +101,20 @@ Configurable performance flags:
 | `DEEPSCAN_MAX_CONCURRENT_ANALYSES` | `1` | RAM/CPU safety limit |
 | `DEEPSCAN_ENABLE_DYNAMIC_INT8` | `0` | Optional CPU Linear-layer int8 quantization |
 | `DEEPSCAN_DISK_CACHE` | `0` | Persist SHA-256 response cache |
+| `DEEPSCAN_USE_TUNING` | `0` | Explicitly load validated `eval/tuning.json` |
+| `DEEPSCAN_ALLOWED_ORIGINS` | localhost origins | Comma-separated trusted browser origins |
+| `DEEPSCAN_REPORT_RETENTION_HOURS` | `24` | Derived report/cache retention |
+| `DEEPSCAN_MAX_MEMORY_CACHE_ENTRIES` | `64` | In-memory response cache bound |
+| `DEEPSCAN_RATE_LIMIT_REQUESTS` | `30` | Analysis requests per client window |
+| `DEEPSCAN_RATE_LIMIT_WINDOW_SECONDS` | `60` | Analysis rate-limit window |
+| `ANTHROPIC_API_KEY` | empty | Optional Anthropic summary provider |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Anthropic summary model |
+| `ANTHROPIC_TIMEOUT_SECONDS` | `30` | Anthropic request timeout |
+| `ANTHROPIC_DAILY_CALL_LIMIT` | `100` | Process-local daily Anthropic call cap |
+| `ANTHROPIC_RATE_LIMIT_REQUESTS` | `5` | Anthropic calls per client window |
+| `ANTHROPIC_RATE_LIMIT_WINDOW_SECONDS` | `60` | Anthropic per-client window |
+| `GROQ_API_KEY` | empty | Legacy fallback summary provider |
+| `GROQ_MODEL` | `openai/gpt-oss-120b` | Legacy Groq summary model |
 
 On the benchmark machine (12 logical CPUs, CPU-only Torch), a cold startup
 including model load/warm-up was about 15–20 seconds, while a warm image

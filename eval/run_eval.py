@@ -4,6 +4,7 @@ import argparse
 import csv
 import hashlib
 import math
+import re
 import sys
 from pathlib import Path
 from statistics import mean, median
@@ -289,11 +290,17 @@ def _holdout_split(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     if not 0 < fraction < 1:
         raise ValueError("holdout fraction must be between 0 and 1")
-    train, holdout = [], []
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for row in rows:
-        digest = hashlib.sha256(row["path"].encode("utf-8")).digest()
+        path = Path(row["path"])
+        stem = re.sub(r"_wa$", "", path.stem, flags=re.IGNORECASE)
+        key = (row["expected"], str(path.with_name(stem + path.suffix).parent / stem))
+        grouped.setdefault(key, []).append(row)
+    train, holdout = [], []
+    for key in sorted(grouped):
+        digest = hashlib.sha256(f"42:{key[0]}:{key[1]}".encode("utf-8")).digest()
         target = holdout if int.from_bytes(digest[:8], "big") / 2**64 < fraction else train
-        target.append(row)
+        target.extend(grouped[key])
     return train, holdout
 
 
@@ -301,7 +308,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Evaluate DeepScan on labeled local media.")
     parser.add_argument("--data-dir", type=Path, default=ROOT / "eval" / "data")
     parser.add_argument("--output", type=Path, default=ROOT / "eval" / "results.csv")
-    parser.add_argument("--holdout-fraction", type=float, default=0.2)
+    parser.add_argument("--holdout-fraction", type=float, default=0.3)
     parser.add_argument("--proposed-real-threshold", type=float, default=30.0)
     parser.add_argument("--proposed-deepfake-threshold", type=float, default=72.0)
     args = parser.parse_args()

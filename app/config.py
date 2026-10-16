@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import multiprocessing
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -63,9 +64,30 @@ LOW_QUALITY_SIGNAL_MULTIPLIER = 0.35
 LOW_RESOLUTION_MIN_SIDE = 256
 HEAVY_COMPRESSION_JPEG_QUALITY = 55
 CALIBRATION_PATH = ROOT / "eval" / "calibration.json"
+TUNING_PATH = ROOT / "eval" / "tuning.json"
+USE_TUNING = os.getenv("DEEPSCAN_USE_TUNING", "0").lower() in {"1", "true", "yes"}
 VIDEO_TEMPORAL_WEIGHT = 0.25
 REAL_THRESHOLD = 30.0
 DEEPFAKE_THRESHOLD = 72.0
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 GROQ_TIMEOUT_SECONDS = float(os.getenv("GROQ_TIMEOUT_SECONDS", "30"))
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ANTHROPIC_TIMEOUT_SECONDS = float(os.getenv("ANTHROPIC_TIMEOUT_SECONDS", "30"))
+ANTHROPIC_DAILY_CALL_LIMIT = int(os.getenv("ANTHROPIC_DAILY_CALL_LIMIT", "100"))
+ANTHROPIC_RATE_LIMIT_REQUESTS = int(os.getenv("ANTHROPIC_RATE_LIMIT_REQUESTS", "5"))
+ANTHROPIC_RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("ANTHROPIC_RATE_LIMIT_WINDOW_SECONDS", "60"))
+
+if USE_TUNING and TUNING_PATH.exists():
+    try:
+        tuning = json.loads(TUNING_PATH.read_text(encoding="utf-8"))
+        if isinstance(tuning.get("signal_weights"), dict):
+            SIGNAL_WEIGHTS = {
+                name: float(tuning["signal_weights"].get(name, weight))
+                for name, weight in SIGNAL_WEIGHTS.items()
+            }
+        REAL_THRESHOLD = float(tuning.get("real_threshold", REAL_THRESHOLD))
+        DEEPFAKE_THRESHOLD = float(tuning.get("deepfake_threshold", DEEPFAKE_THRESHOLD))
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        raise RuntimeError(f"Invalid tuning file {TUNING_PATH}: {exc}") from exc

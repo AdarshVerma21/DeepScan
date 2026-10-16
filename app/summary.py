@@ -3,14 +3,29 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import threading
+import time
 from dataclasses import dataclass
 from typing import Any
 
 from groq import Groq
 
-from .config import GROQ_API_KEY, GROQ_MODEL, GROQ_TIMEOUT_SECONDS
+from .config import (
+    ANTHROPIC_API_KEY,
+    ANTHROPIC_DAILY_CALL_LIMIT,
+    ANTHROPIC_MODEL,
+    ANTHROPIC_RATE_LIMIT_REQUESTS,
+    ANTHROPIC_RATE_LIMIT_WINDOW_SECONDS,
+    ANTHROPIC_TIMEOUT_SECONDS,
+    GROQ_API_KEY,
+    GROQ_MODEL,
+    GROQ_TIMEOUT_SECONDS,
+)
 
 LOGGER = logging.getLogger(__name__)
+SUMMARY_RATE_LOCK = threading.Lock()
+SUMMARY_REQUESTS_BY_CLIENT: dict[str, list[float]] = {}
+SUMMARY_CALLS_BY_DAY: dict[str, int] = {}
 SYSTEM_PROMPT = """You are a digital-forensics analyst. Using ONLY the evidence provided, write plain-language markdown with exactly these ## headings, in this order: "Verdict", "Key reasons", "What's uncertain", "Next steps". Under each heading use short bullets. State the verdict and confidence first. Explain technical terms in parentheses. Reference specific evidence and video timestamps when provided. Never claim certainty, never invent evidence, and do not add other headings."""
 
 
@@ -83,8 +98,61 @@ def _request_summary(evidence: dict[str, Any]) -> str:
         raise ValueError("Groq returned an empty explanation")
     return text.strip()
 
+def _request_anthropic_summary(evidence: dict[str, Any]) -> str:
+    try:
+        from anthropic import Anthropic
+    except ImportError as exc:
+        raise RuntimeError("Anthropic SDK is not installed") from exc
+    client = Anthropic(api_key=ANTHROPIC_API_KEY, timeout=ANTHROPIC_TIMEOUT_SECONDS, max_retries=2)
+    response = client.messages.create(
+        model=ANTHROPIC_MODEL,
+        max_tokens=700,
+        system=SYSTEM_PROMPT,
+        messages=[{"role": "user", "content": json.dumps(evidence, default=str)}],
+    )
+    content = getattr(response, "content", None)
+    text = "".join(
+        str(getattr(block, "text", ""))
+        for block in (content or [])
+        if getattr(block, "type", "") == "text"
+    ).strip()
+    if not text:
+        raise ValueError("Anthropic returned an empty explanation")
+    return text
 
-async def generate_summary(evidence: dict[str, Any]) -> SummaryResult:
+def _reserve_anthropic_call(client_key: str) -> bool:
+    if not ANTHROPIC_API_KEY:
+        return False
+    now = time.monotonic()
+    today = time.strftime("%Y-%m-%d", time.gmtime())
+    with SUMMARY_RATE_LOCK:
+        timestamps = SUMMARY_REQUESTS_BY_CLIENT.setdefault(client_key, [])
+        cutoff = now - ANTHROPIC_RATE_LIMIT_WINDOW_SECONDS
+        timestamps[:] = [timestamp for timestamp in timestamps if timestamp > cutoff]
+        if len(timestamps) >= max(1, ANTHROPIC_RATE_LIMIT_REQUESTS):
+            LOGGER.warning("Anthropic per-client summary limit reached for %s", client_key)
+            return False
+        if SUMMARY_CALLS_BY_DAY.get(today, 0) >= max(1, ANTHROPIC_DAILY_CALL_LIMIT):
+            LOGGER.warning("Anthropic daily summary limit reached")
+            return False
+        timestamps.append(now)
+        SUMMARY_CALLS_BY_DAY[today] = SUMMARY_CALLS_BY_DAY.get(today, 0) + 1
+        for day in list(SUMMARY_CALLS_BY_DAY):
+            if day != today:
+                del SUMMARY_CALLS_BY_DAY[day]
+        return True
+
+
+async def generate_summary(evidence: dict[str, Any], client_key: str = "unknown") -> SummaryResult:
+    if ANTHROPIC_API_KEY:
+        if not _reserve_anthropic_call(client_key):
+            return SummaryResult(_fallback(evidence), True)
+        try:
+            text = await asyncio.to_thread(_request_anthropic_summary, evidence)
+            return SummaryResult(text, False)
+        except Exception as exc:
+            _log_failure(exc)
+            return SummaryResult(_fallback(evidence), True)
     if not GROQ_API_KEY:
         LOGGER.info("GROQ_API_KEY is not configured; using deterministic fallback")
         return SummaryResult(_fallback(evidence), True)

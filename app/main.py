@@ -190,7 +190,7 @@ def _validate_upload_content(raw: bytes, suffix: str) -> None:
             raise ValueError("The uploaded file is not a valid video.")
 
 
-async def _analyze(raw: bytes, filename: str) -> dict:
+async def _analyze(raw: bytes, filename: str, client_key: str = "unknown") -> dict:
     started = time.perf_counter()
     suffix = Path(filename).suffix.lower()
     image_suffixes = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
@@ -257,7 +257,7 @@ async def _analyze(raw: bytes, filename: str) -> dict:
         "input_warnings": list(dict.fromkeys(input_warnings)),
     }
     summary_started = time.perf_counter()
-    summary_result = await generate_summary(evidence_payload)
+    summary_result = await generate_summary(evidence_payload, client_key)
     timings = dict(result.get("timings", {}) if analysis_type == "image" else video.get("timings", {}))
     if analysis_type == "video":
         timings["primary_forensics_total"] = round(sum(float(value) for value in forensic.get("_timings", {}).values()), 2)
@@ -338,7 +338,7 @@ async def analyze(request: Request, file: UploadFile = File(...)) -> dict:
     try:
         _validate_upload_content(raw, suffix)
         async with ANALYSIS_SEMAPHORE:
-            payload = await _analyze(raw, file.filename or "upload.bin")
+            payload = await _analyze(raw, file.filename or "upload.bin", _client_key(request))
         _cache_payload(cache_key, payload)
         if DISK_CACHE_ENABLED:
             REPORT_DIR.mkdir(parents=True, exist_ok=True)
