@@ -18,7 +18,7 @@ services:
       - key: GROQ_MODEL
         value: openai/gpt-oss-120b
       - key: DEEPSCAN_MODEL_LIMIT
-        value: "2"
+        value: "1"
       - key: DEEPSCAN_ENABLE_DYNAMIC_INT8
         value: "1"
       - key: DEEPSCAN_TTA_ENABLED
