@@ -32,6 +32,11 @@ MAX_CONCURRENT_ANALYSES = int(os.getenv("DEEPSCAN_MAX_CONCURRENT_ANALYSES", "1")
 TORCH_NUM_THREADS = int(os.getenv("DEEPSCAN_TORCH_NUM_THREADS", str(max(1, min(4, multiprocessing.cpu_count())))))
 ENABLE_DYNAMIC_INT8 = os.getenv("DEEPSCAN_ENABLE_DYNAMIC_INT8", "0").lower() in {"1", "true", "yes"}
 MODEL_LIMIT = max(0, int(os.getenv("DEEPSCAN_MODEL_LIMIT", "0")))
+MODEL_SELECTION = tuple(
+    model_id.strip()
+    for model_id in os.getenv("DEEPSCAN_MODEL_SELECTION", "").split(",")
+    if model_id.strip()
+)
 RESPONSE_IMAGE_MAX_PX = 800
 RESPONSE_IMAGE_QUALITY = 78
 DISK_CACHE_ENABLED = os.getenv("DEEPSCAN_DISK_CACHE", "0").lower() in {"1", "true", "yes"}
@@ -48,6 +53,8 @@ MODEL_CONFIGS = [
     DetectorConfig("prithivMLmods/Deep-Fake-Detector-Model", 1.0),
     DetectorConfig("umm-maybe/AI-image-detector", 0.8),
 ]
+if MODEL_SELECTION:
+    MODEL_CONFIGS = [config for config in MODEL_CONFIGS if config.model_id in MODEL_SELECTION]
 if MODEL_LIMIT:
     MODEL_CONFIGS = MODEL_CONFIGS[:MODEL_LIMIT]
 

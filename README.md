@@ -108,6 +108,7 @@ Configurable performance flags:
 | `DEEPSCAN_MAX_CONCURRENT_ANALYSES` | `1` | RAM/CPU safety limit |
 | `DEEPSCAN_ENABLE_DYNAMIC_INT8` | `0` | Optional CPU Linear-layer int8 quantization |
 | `DEEPSCAN_MODEL_LIMIT` | `0` | Maximum configured detectors; `0` uses all |
+| `DEEPSCAN_MODEL_SELECTION` | empty | Comma-separated configured model IDs to load |
 | `DEEPSCAN_TTA_ENABLED` | `1` | Enable test-time augmentation |
 | `DEEPSCAN_DISK_CACHE` | `0` | Persist SHA-256 response cache |
 | `DEEPSCAN_USE_TUNING` | `0` | Explicitly load validated `eval/tuning.json` |
