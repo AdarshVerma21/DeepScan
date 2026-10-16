@@ -31,6 +31,7 @@ VIDEO_EARLY_STOP_LOW = float(os.getenv("DEEPSCAN_VIDEO_EARLY_STOP_LOW", "0.05"))
 MAX_CONCURRENT_ANALYSES = int(os.getenv("DEEPSCAN_MAX_CONCURRENT_ANALYSES", "1"))
 TORCH_NUM_THREADS = int(os.getenv("DEEPSCAN_TORCH_NUM_THREADS", str(max(1, min(4, multiprocessing.cpu_count())))))
 ENABLE_DYNAMIC_INT8 = os.getenv("DEEPSCAN_ENABLE_DYNAMIC_INT8", "0").lower() in {"1", "true", "yes"}
+MODEL_LIMIT = max(0, int(os.getenv("DEEPSCAN_MODEL_LIMIT", "0")))
 RESPONSE_IMAGE_MAX_PX = 800
 RESPONSE_IMAGE_QUALITY = 78
 DISK_CACHE_ENABLED = os.getenv("DEEPSCAN_DISK_CACHE", "0").lower() in {"1", "true", "yes"}
@@ -47,6 +48,8 @@ MODEL_CONFIGS = [
     DetectorConfig("prithivMLmods/Deep-Fake-Detector-Model", 1.0),
     DetectorConfig("umm-maybe/AI-image-detector", 0.8),
 ]
+if MODEL_LIMIT:
+    MODEL_CONFIGS = MODEL_CONFIGS[:MODEL_LIMIT]
 
 SIGNAL_WEIGHTS = {
     "ensemble": 0.55,
@@ -56,7 +59,7 @@ SIGNAL_WEIGHTS = {
     "metadata": 0.07,
     "boundary": 0.10,
 }
-TTA_ENABLED = True
+TTA_ENABLED = os.getenv("DEEPSCAN_TTA_ENABLED", "1").lower() in {"1", "true", "yes"}
 TTA_MARGINS = (0.12, 0.20, 0.30)
 TTA_INCLUDE_FLIP = True
 TTA_INSTABILITY_PENALTY = 0.15
