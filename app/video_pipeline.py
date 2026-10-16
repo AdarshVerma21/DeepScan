@@ -8,6 +8,13 @@ from .config import MAX_VIDEO_SECONDS, VIDEO_BATCH_SIZE, VIDEO_EARLY_STOP_HIGH, 
 from .image_pipeline import analyze_images_batch
 
 
+def _frame_score(result: dict[str, object]) -> float:
+    ensemble_score = result.get("ensemble_score")
+    if ensemble_score is None:
+        return 0.5
+    return float(np.clip(float(ensemble_score), 0.0, 1.0))
+
+
 def analyze_video(path: str) -> dict[str, object]:
     started = time.perf_counter()
     capture = cv2.VideoCapture(path)
@@ -40,7 +47,7 @@ def analyze_video(path: str) -> dict[str, object]:
         results = analyze_images_batch(batch_images)
         model_batch_ms += (time.perf_counter() - model_started) * 1000
         for (frame_index, frame), result in zip(batch_meta, results):
-            frames.append({"frame": frame_index, "timestamp": frame_index / fps, "score": float(result["ensemble_score"]), "image": frame, "result": result})
+            frames.append({"frame": frame_index, "timestamp": frame_index / fps, "score": _frame_score(result), "image": frame, "result": result})
         scores = [float(item["score"]) for item in frames]
         if len(scores) >= VIDEO_EARLY_STOP_MIN_FRAMES:
             high = all(score >= VIDEO_EARLY_STOP_HIGH for score in scores[-VIDEO_EARLY_STOP_MIN_FRAMES:])
