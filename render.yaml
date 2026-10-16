@@ -29,3 +29,9 @@ services:
         value: "0"
       - key: DEEPSCAN_TORCH_NUM_THREADS
         value: "2"
+      - key: DEEPSCAN_VIDEO_MAX_FRAMES
+        value: "16"
+      - key: DEEPSCAN_VIDEO_FRAME_MAX_PX
+        value: "640"
+      - key: DEEPSCAN_VIDEO_BATCH_SIZE
+        value: "2"

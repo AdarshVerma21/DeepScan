@@ -4,7 +4,15 @@ import cv2
 import numpy as np
 import time
 
-from .config import MAX_VIDEO_SECONDS, VIDEO_BATCH_SIZE, VIDEO_EARLY_STOP_HIGH, VIDEO_EARLY_STOP_LOW, VIDEO_EARLY_STOP_MIN_FRAMES
+from .config import (
+    MAX_VIDEO_SECONDS,
+    VIDEO_BATCH_SIZE,
+    VIDEO_EARLY_STOP_HIGH,
+    VIDEO_EARLY_STOP_LOW,
+    VIDEO_EARLY_STOP_MIN_FRAMES,
+    VIDEO_FRAME_MAX_PX,
+    VIDEO_MAX_FRAMES,
+)
 from .image_pipeline import analyze_images_batch
 
 
@@ -26,7 +34,7 @@ def analyze_video(path: str) -> dict[str, object]:
     source_duration = count / fps if count > 0 else 0
     analyzed_count = min(count, max(1, int(MAX_VIDEO_SECONDS * fps)))
     duration = analyzed_count / fps if analyzed_count else 0
-    target = min(60, max(2, int(duration * 2)))
+    target = min(VIDEO_MAX_FRAMES, max(2, int(duration * 2)))
     indices = sorted(set(np.linspace(0, max(0, analyzed_count - 1), target).astype(int).tolist() + [0, max(0, analyzed_count - 1)]))
     frames = []
     sampled_images = []
@@ -63,6 +71,14 @@ def analyze_video(path: str) -> dict[str, object]:
         if index in selected:
             ok, frame = capture.retrieve()
             if ok:
+                height, width = frame.shape[:2]
+                if max(height, width) > VIDEO_FRAME_MAX_PX:
+                    scale = VIDEO_FRAME_MAX_PX / max(height, width)
+                    frame = cv2.resize(
+                        frame,
+                        (max(1, int(width * scale)), max(1, int(height * scale))),
+                        interpolation=cv2.INTER_AREA,
+                    )
                 sampled_images.append(frame)
                 sampled_meta.append((index, frame))
                 if len(sampled_images) >= batch_size:
@@ -89,6 +105,11 @@ def analyze_video(path: str) -> dict[str, object]:
     if source_duration > MAX_VIDEO_SECONDS:
         limitations.append(
             f"Only the first {MAX_VIDEO_SECONDS} seconds of a {source_duration:.1f}-second video were analyzed."
+        )
+    if VIDEO_MAX_FRAMES < 60 or VIDEO_FRAME_MAX_PX < 1536:
+        limitations.append(
+            f"Video frames were bounded to at most {VIDEO_MAX_FRAMES} samples and "
+            f"{VIDEO_FRAME_MAX_PX}px for this deployment."
         )
     if early_stopped:
         limitations.append("Frame analysis stopped early after sustained agreement between sampled frames.")
