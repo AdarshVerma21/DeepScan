@@ -17,6 +17,10 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: openai/gpt-oss-120b
+      - key: GROQ_TIMEOUT_SECONDS
+        value: "5"
+      - key: ANTHROPIC_TIMEOUT_SECONDS
+        value: "5"
       - key: DEEPSCAN_MODEL_LIMIT
         value: "1"
       - key: DEEPSCAN_MODEL_SELECTION

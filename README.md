@@ -108,6 +108,8 @@ Configurable performance flags:
 | `DEEPSCAN_VIDEO_BATCH_SIZE` | `4` | Sampled video frames per detector batch |
 | `DEEPSCAN_VIDEO_MAX_FRAMES` | `60` | Maximum sampled frames per video; Render uses `16` |
 | `DEEPSCAN_VIDEO_FRAME_MAX_PX` | `1536` | Maximum decoded frame dimension; Render uses `640` |
+| `GROQ_TIMEOUT_SECONDS` | `30` | Timeout for optional Groq summaries; Render uses `5` |
+| `ANTHROPIC_TIMEOUT_SECONDS` | `30` | Timeout for optional Anthropic summaries; Render uses `5` |
 | `DEEPSCAN_MAX_CONCURRENT_ANALYSES` | `1` | RAM/CPU safety limit |
 | `DEEPSCAN_ENABLE_DYNAMIC_INT8` | `0` | Optional CPU Linear-layer int8 quantization |
 | `DEEPSCAN_MODEL_LIMIT` | `0` | Maximum configured detectors; `0` uses all |

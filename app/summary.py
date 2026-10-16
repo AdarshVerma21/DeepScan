@@ -81,7 +81,7 @@ def _log_failure(exc: Exception) -> None:
 
 
 def _request_summary(evidence: dict[str, Any]) -> str:
-    client = Groq(api_key=GROQ_API_KEY, timeout=GROQ_TIMEOUT_SECONDS, max_retries=2)
+    client = Groq(api_key=GROQ_API_KEY, timeout=GROQ_TIMEOUT_SECONDS, max_retries=1)
     response = client.chat.completions.create(
         model=GROQ_MODEL,
         temperature=0.2,
@@ -103,7 +103,7 @@ def _request_anthropic_summary(evidence: dict[str, Any]) -> str:
         from anthropic import Anthropic
     except ImportError as exc:
         raise RuntimeError("Anthropic SDK is not installed") from exc
-    client = Anthropic(api_key=ANTHROPIC_API_KEY, timeout=ANTHROPIC_TIMEOUT_SECONDS, max_retries=2)
+    client = Anthropic(api_key=ANTHROPIC_API_KEY, timeout=ANTHROPIC_TIMEOUT_SECONDS, max_retries=1)
     response = client.messages.create(
         model=ANTHROPIC_MODEL,
         max_tokens=700,
