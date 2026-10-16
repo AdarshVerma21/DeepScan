@@ -61,8 +61,9 @@ For Render, connect the GitHub repository and select **Blueprint** deployment; R
 [`render.yaml`](./render.yaml), build the Docker image, and use `/api/health` for health checks.
 Add `ANTHROPIC_API_KEY` or `GROQ_API_KEY` as Render secrets. The free plan may sleep when idle
 and is not suitable for sustained model inference workloads. The Render blueprint uses a
-deployment-safe fast mode (one detector, CPU dynamic INT8, and no test-time augmentation) to
-stay within free-tier request limits; local runs retain the full three-detector TTA defaults.
+512 MiB-safe classical-forensics mode with pretrained model loading disabled; this keeps the
+public free service reliable and reports the limitation honestly. Local runs retain the full
+three-detector TTA defaults.
 
 For Hugging Face Spaces, create a Docker Space, push this folder, and configure `ANTHROPIC_API_KEY`,  `ANTHROPIC_MODEL`, and the quota variables as Space secrets/variables. `GROQ_API_KEY` and `GROQ_MODEL` remain supported as a fallback provider. For Render or Railway, deploy the Dockerfile and use port 7860 (or map the platform port to 7860); no source changes are required. Configure `DEEPSCAN_ALLOWED_ORIGINS` with a comma-separated list of trusted browser origins when the UI and API use different domains.
 
@@ -109,6 +110,7 @@ Configurable performance flags:
 | `DEEPSCAN_ENABLE_DYNAMIC_INT8` | `0` | Optional CPU Linear-layer int8 quantization |
 | `DEEPSCAN_MODEL_LIMIT` | `0` | Maximum configured detectors; `0` uses all |
 | `DEEPSCAN_MODEL_SELECTION` | empty | Comma-separated configured model IDs to load |
+| `DEEPSCAN_DISABLE_MODELS` | `0` | Skip pretrained models and use classical forensics only |
 | `DEEPSCAN_TTA_ENABLED` | `1` | Enable test-time augmentation |
 | `DEEPSCAN_DISK_CACHE` | `0` | Persist SHA-256 response cache |
 | `DEEPSCAN_USE_TUNING` | `0` | Explicitly load validated `eval/tuning.json` |

@@ -8,7 +8,7 @@ from functools import lru_cache
 
 import numpy as np
 
-from .config import CALIBRATION_PATH, ENABLE_DYNAMIC_INT8, MODEL_CONFIGS, TORCH_NUM_THREADS
+from .config import CALIBRATION_PATH, DISABLE_MODELS, ENABLE_DYNAMIC_INT8, MODEL_CONFIGS, TORCH_NUM_THREADS
 
 LOGGER = logging.getLogger(__name__)
 MODEL_LOAD_MS = 0.0
@@ -122,6 +122,9 @@ def _fake_indices(config: object) -> set[int]:
 def load_detectors() -> tuple[LoadedDetector, ...]:
     """Load configured detectors once; failed Hub models do not stop the app."""
     global MODEL_LOAD_MS
+    if DISABLE_MODELS:
+        LOGGER.warning("Pretrained detectors disabled by DEEPSCAN_DISABLE_MODELS")
+        return ()
     started = __import__("time").perf_counter()
     try:
         from transformers import AutoImageProcessor, AutoModelForImageClassification

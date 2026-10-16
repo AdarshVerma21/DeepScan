@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import (
     ALLOWED_ORIGINS,
+    DISABLE_MODELS,
     DISK_CACHE_ENABLED,
     MAX_CONCURRENT_ANALYSES,
     MAX_MEMORY_CACHE_ENTRIES,
@@ -161,9 +162,14 @@ async def health() -> dict[str, str]:
 @app.get("/api/ready")
 async def ready() -> dict[str, object]:
     status = detector_status()
-    if not status["available"]:
+    if not status["available"] and not DISABLE_MODELS:
         raise HTTPException(503, "No pretrained detectors are available.")
-    return {"status": "ready", "service": "DeepScan", "models": status}
+    return {
+        "status": "ready",
+        "service": "DeepScan",
+        "mode": "classical-forensics" if DISABLE_MODELS else "ensemble",
+        "models": status,
+    }
 
 
 def _decode_image(raw: bytes) -> np.ndarray:

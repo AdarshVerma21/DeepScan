@@ -21,6 +21,8 @@ services:
         value: "1"
       - key: DEEPSCAN_MODEL_SELECTION
         value: umm-maybe/AI-image-detector
+      - key: DEEPSCAN_DISABLE_MODELS
+        value: "1"
       - key: DEEPSCAN_ENABLE_DYNAMIC_INT8
         value: "1"
       - key: DEEPSCAN_TTA_ENABLED

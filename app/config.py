@@ -31,6 +31,7 @@ VIDEO_EARLY_STOP_LOW = float(os.getenv("DEEPSCAN_VIDEO_EARLY_STOP_LOW", "0.05"))
 MAX_CONCURRENT_ANALYSES = int(os.getenv("DEEPSCAN_MAX_CONCURRENT_ANALYSES", "1"))
 TORCH_NUM_THREADS = int(os.getenv("DEEPSCAN_TORCH_NUM_THREADS", str(max(1, min(4, multiprocessing.cpu_count())))))
 ENABLE_DYNAMIC_INT8 = os.getenv("DEEPSCAN_ENABLE_DYNAMIC_INT8", "0").lower() in {"1", "true", "yes"}
+DISABLE_MODELS = os.getenv("DEEPSCAN_DISABLE_MODELS", "0").lower() in {"1", "true", "yes"}
 MODEL_LIMIT = max(0, int(os.getenv("DEEPSCAN_MODEL_LIMIT", "0")))
 MODEL_SELECTION = tuple(
     model_id.strip()
