@@ -289,8 +289,30 @@ async function analyze() {
   try {
     const response = await fetch("/api/analyze", { method:"POST", body, signal:activeRequestController.signal });
     setProgress(75);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Analysis failed.");
+    const contentType = response.headers.get("content-type") || "";
+    let data = null;
+    let responseText = "";
+    if (contentType.includes("application/json")) {
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("The analysis service returned invalid JSON. Please retry.");
+      }
+    } else {
+      responseText = await response.text();
+    }
+    if (!response.ok) {
+      const detail = data && typeof data.detail === "string" ? data.detail : "";
+      const statusMessage = response.status === 502 || response.status === 503 || response.status === 504
+        ? "The Render analysis service is starting or unavailable. Please wait a moment and retry."
+        : detail || `Analysis failed (HTTP ${response.status}). Please retry.`;
+      throw new Error(statusMessage);
+    }
+    if (!data || typeof data !== "object") {
+      throw new Error(responseText.includes("<html") || responseText.includes("<!DOCTYPE")
+        ? "The analysis service returned an HTML error page. Please retry in a moment."
+        : "The analysis service returned an invalid response. Please retry.");
+    }
     if (generation !== requestGeneration) return;
     renderResult(data, generation);
     setProgress(100);
