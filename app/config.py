@@ -13,6 +13,7 @@ REPORT_DIR = ROOT / "reports"
 REPORT_RETENTION_HOURS = float(os.getenv("DEEPSCAN_REPORT_RETENTION_HOURS", "24"))
 MAX_MEMORY_CACHE_ENTRIES = int(os.getenv("DEEPSCAN_MAX_MEMORY_CACHE_ENTRIES", "64"))
 MAX_UPLOAD_BYTES = 100 * 1024 * 1024
+DISABLE_MODELS = os.getenv("DEEPSCAN_DISABLE_MODELS", "0").lower() in {"1", "true", "yes"}
 ALLOWED_ORIGINS = tuple(
     origin.strip()
     for origin in os.getenv(
@@ -24,8 +25,8 @@ ALLOWED_ORIGINS = tuple(
 RATE_LIMIT_REQUESTS = int(os.getenv("DEEPSCAN_RATE_LIMIT_REQUESTS", "30"))
 RATE_LIMIT_WINDOW_SECONDS = int(os.getenv("DEEPSCAN_RATE_LIMIT_WINDOW_SECONDS", "60"))
 MAX_VIDEO_SECONDS = 60
-VIDEO_MAX_FRAMES = int(os.getenv("DEEPSCAN_VIDEO_MAX_FRAMES", "60"))
-VIDEO_FRAME_MAX_PX = int(os.getenv("DEEPSCAN_VIDEO_FRAME_MAX_PX", "1536"))
+VIDEO_MAX_FRAMES = int(os.getenv("DEEPSCAN_VIDEO_MAX_FRAMES", "16" if DISABLE_MODELS else "60"))
+VIDEO_FRAME_MAX_PX = int(os.getenv("DEEPSCAN_VIDEO_FRAME_MAX_PX", "640" if DISABLE_MODELS else "1536"))
 VIDEO_BATCH_SIZE = int(os.getenv("DEEPSCAN_VIDEO_BATCH_SIZE", "4"))
 VIDEO_EARLY_STOP_MIN_FRAMES = int(os.getenv("DEEPSCAN_VIDEO_EARLY_STOP_MIN_FRAMES", "8"))
 VIDEO_EARLY_STOP_HIGH = float(os.getenv("DEEPSCAN_VIDEO_EARLY_STOP_HIGH", "0.95"))
@@ -33,7 +34,6 @@ VIDEO_EARLY_STOP_LOW = float(os.getenv("DEEPSCAN_VIDEO_EARLY_STOP_LOW", "0.05"))
 MAX_CONCURRENT_ANALYSES = int(os.getenv("DEEPSCAN_MAX_CONCURRENT_ANALYSES", "1"))
 TORCH_NUM_THREADS = int(os.getenv("DEEPSCAN_TORCH_NUM_THREADS", str(max(1, min(4, multiprocessing.cpu_count())))))
 ENABLE_DYNAMIC_INT8 = os.getenv("DEEPSCAN_ENABLE_DYNAMIC_INT8", "0").lower() in {"1", "true", "yes"}
-DISABLE_MODELS = os.getenv("DEEPSCAN_DISABLE_MODELS", "0").lower() in {"1", "true", "yes"}
 MODEL_LIMIT = max(0, int(os.getenv("DEEPSCAN_MODEL_LIMIT", "0")))
 MODEL_SELECTION = tuple(
     model_id.strip()
