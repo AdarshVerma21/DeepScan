@@ -22,5 +22,5 @@ COPY . .
 RUN useradd --create-home --uid 10001 deepscan && mkdir -p /app/reports && chown -R deepscan:deepscan /app /opt/huggingface
 USER deepscan
 EXPOSE 7860
-HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:7860/api/health')"
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860", "--workers", "1"]
+HEALTHCHECK --interval=30s --timeout=5s CMD python -c "import os, urllib.request; urllib.request.urlopen(f'http://localhost:{os.getenv(\"PORT\", \"7860\")}/api/health')"
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860} --workers 1"]

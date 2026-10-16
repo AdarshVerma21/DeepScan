@@ -57,7 +57,12 @@ The image exposes port 7860, installs only the required headless OpenCV/MediaPip
 
 ## Deployment
 
-For Hugging Face Spaces, create a Docker Space, push this folder, and configure `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, and the quota variables as Space secrets/variables. `GROQ_API_KEY` and `GROQ_MODEL` remain supported as a fallback provider. For Render or Railway, deploy the Dockerfile and use port 7860 (or map the platform port to 7860); no source changes are required. Configure `DEEPSCAN_ALLOWED_ORIGINS` with a comma-separated list of trusted browser origins when the UI and API use different domains.
+For Render, connect the GitHub repository and select **Blueprint** deployment; Render will read
+[`render.yaml`](./render.yaml), build the Docker image, and use `/api/health` for health checks.
+Add `ANTHROPIC_API_KEY` or `GROQ_API_KEY` as Render secrets. The free plan may sleep when idle
+and is not suitable for sustained model inference workloads.
+
+For Hugging Face Spaces, create a Docker Space, push this folder, and configure `ANTHROPIC_API_KEY`,  `ANTHROPIC_MODEL`, and the quota variables as Space secrets/variables. `GROQ_API_KEY` and `GROQ_MODEL` remain supported as a fallback provider. For Render or Railway, deploy the Dockerfile and use port 7860 (or map the platform port to 7860); no source changes are required. Configure `DEEPSCAN_ALLOWED_ORIGINS` with a comma-separated list of trusted browser origins when the UI and API use different domains.
 
 ## API
 
